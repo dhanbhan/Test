@@ -1,0 +1,58 @@
+   public int render(Graphics2D g2d, int pageNum, float zoomLevel, Rectangle clipRect)
+   {
+      log(LoggerListener.LOGLEVEL_DEBUG, "pageNum: " +(pageNum-1) + ", zoomLevel: " + zoomLevel);
+      log(LoggerListener.LOGLEVEL_DEBUG, "clipRect: "+clipRect);
+
+      if (document == null)
+      {
+         return RendererStatus.FATAL_ERROR_FLAG;
+      }
+
+      Graphics2D bg = null;
+      int pageIndex = pageNum - 1;
+
+      try
+      {
+         if (document.getPageCount() == 0)
+         {
+            return RendererStatus.FATAL_ERROR_FLAG;
+         }
+
+         if (pageNum > document.getPageCount())
+         {
+            return RendererStatus.FATAL_ERROR_FLAG;
+         }
+
+         statusManager.renderingStart(pageNum);
+
+         log(LoggerListener.LOGLEVEL_DEBUG, "Start creating Graphics2D");
+         bg = (Graphics2D) g2d.create();
+         if (clipRect != null)
+         {
+            bg.setColor(Color.white);
+            bg.scale(zoomLevel, zoomLevel);
+            bg.fillRect(0, 0, clipRect.width, clipRect.height);
+            bg.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            bg.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            bg.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            document.renderToSize(pageIndex, bg, 0, 0, clipRect.width, clipRect.height);
+
+            log(LoggerListener.LOGLEVEL_DEBUG, "Graphics2D completed");
+            this.statusManager.renderingEnd(pageIndex);
+         }
+      }
+      catch (Exception e)
+      {
+         log(e);
+         openError = true;
+         statusManager.docOpenEnd();
+         log(LoggerListener.LOGLEVEL_ERROR, String.valueOf(RendererStatus.FILE_OPEN_ERROR_FLAG));
+         return RendererStatus.FILE_OPEN_ERROR_FLAG;
+      }
+      finally
+      {
+         if (bg != null)
+            bg.dispose();
+      }
+      return rendererStatus.getStatus();
+   }
